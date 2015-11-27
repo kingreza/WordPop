@@ -69,7 +69,7 @@ var engine = Matter.Engine.create(document.querySelector('.content'), {
 engine.render.options.wireframes = false
 
 if (DEBUG) {
-  engine.render.options.showCollisions = true
+  engine.render.options.showCollisions = false
   engine.render.options.showVelocity = false
   engine.render.options.showAngleIndicator = false
   engine.render.options.showIds = true
@@ -130,7 +130,7 @@ function addLetter (key, x, y) {
   playSound()
   hideHelp()
   
-  if (key == '<space>' || key == '<enter>')
+  if (key == '<space>' || key == '<enter>' || letters.length > 6)
   {
     if (letters.length == 0) return
     var letter_bodies = letters.map(function(letter) {return letter.body;}); 
@@ -145,17 +145,19 @@ function addLetter (key, x, y) {
     word_object.id = word_body.id
     word_object.value = ""
     word_object.status = "new"
-    dict[word_object.value.toLowerCase()] ? word_object.is_english = true : word_object.is_english = false
+    
 
     for (i = 0; i < letters.length; i++)
     {
       world_letters[letters[i].id] = word_object
       word_object.value += letters[i].value
     }
-    
+
+    dict[word_object.value.toLowerCase()] ? word_object.is_english = true : word_object.is_english = false
+    word_object.sub_strings = allSubstrings(word_object.value)
 
     var vector = {
-      x: (Math.floor((Date.now() / 200) % 10) / 200) - 0.025,
+      x: 0,
       y: -1 * (HEIGHT / 8200) * letters.length
     }    
     
@@ -242,6 +244,7 @@ function createWord(value, x, y)
   word_object.id = word_body.id
   word_object.value = value
   word_object.status = "new"
+  //word_object.sub_strings = allSubstrings(value)
   dict[word_object.value.toLowerCase()] ? word_object.is_english = true : word_object.is_english = false
 
   words.push(word_object)
@@ -319,43 +322,51 @@ function onCollision (e) {
   })
 }
 
+function generateReaction(word, bigSubs, smallSubs)
+{
+    if (dict[word])
+    {
+      reaction = {}
+      reaction.words = []
+      reaction.score = 0
+      reaction.words.push(word)
+      reaction.words.push(bigSubs.before)
+      reaction.words.push(bigSubs.after)
+      reaction.words.push(smallSubs.before)
+      reaction.words.push(smallSubs.after)
+      for (k = 1; k < reaction.words.length; k++)
+      {
+        if (dict[reaction.words[k]])
+          reaction.score += 10
+        reaction.score += reaction.words[k].length
+      }
+
+      return reaction       
+    }  
+    return null
+}
+
 function react (colliding_words)
 {
   bigger = ((colliding_words.first_word.value.length > colliding_words.second_word.value.length) ? colliding_words.first_word : colliding_words.second_word).value
   smaller = ((colliding_words.first_word.value == bigger) ? colliding_words.second_word : colliding_words.first_word).value
-
-  subword = ""
-  done = false;
+  
   valids = []
-  for (i = 1; i < bigger.length && !done; i++){
-    for (j = 0; j < smaller.length && !done; j++)
+  bigger_subs = allSubstrings(bigger)
+  smaller_subs = allSubstrings(smaller)
+  for (i = 0; i < bigger_subs.length; i++){
+    for (j = 0; j < smaller_subs.length; j++)
     {
-      word = bigger.substr(0, i) + smaller[j]
-      if (DEBUG){
-        console.log("testing: " + word)
-      }
-      if (dict[word])
-      {
-        reaction = {}
-        reaction.words = []
-        reaction.score = 0
-        reaction.words.push(word)
-
-        reaction.words.push(bigger.substr(i, bigger.length))
-        reaction.words.push(smaller.substr(0, j))
-        reaction.words.push(smaller.substr(j + 1, smaller.length))
-
-        for (k = 1; k < reaction.words.length; k++)
-        {
-          if (dict[reaction.words[k]])
-            reaction.score += 10
-          reaction.score += reaction.words[k].length
-        }
-
-        valids.push(reaction) 
-      }      
+      word = bigger_subs[i].word + smaller_subs[j].word
+      word_reverse = smaller_subs[j].word + bigger_subs[i].word 
+      result = generateReaction(word, bigger_subs[i], smaller_subs[j])
+      if (result) valids.push(result)
+      result = generateReaction(word_reverse, bigger_subs[i], smaller_subs[j])
+      if (result) valids.push(result)
+      //console.log(word)
     }
-  }
+  }  
+
 
   selected = 0
   for (i = 0; i< valids.length; i++)
@@ -379,7 +390,7 @@ function react (colliding_words)
   
   if (valids[selected])
   {   
-    combust(reaction, colliding_words)
+    combust(valids[selected], colliding_words)
 
     delete_me.push(world_letters[colliding_words.second_object.id].body)
     delete_me.push(world_letters[colliding_words.first_object.id].body)
@@ -388,6 +399,24 @@ function react (colliding_words)
   return false
 }
 
+function allSubstrings(word)
+{
+  results = []
+  length = word.length
+  for( c = 0 ; c < length ; c++ )
+  {
+     for( i = 1 ; i <= length - c ; i++ )
+     {
+        result = {}
+        result.word = word.substr(c, c+i);
+        result.before = word.substr(0, c);
+        result.after = word.substr(2*c+i, length);
+        
+        results.push(result)
+     }
+  }
+  return results
+}
 
 function combust(reaction, colliding_words)
 {
