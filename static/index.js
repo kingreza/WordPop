@@ -36,9 +36,11 @@ function onResize () {
   KEYS_X = {}
   KEYS.forEach(function (row) {
     row.forEach(function (letter, i) {
-      if (!letter) return // ignore meta keys
+      if (!letter ) return // ignore meta keys
       KEYS_X[letter] = ((i / row.length) + (0.5 / row.length)) * WIDTH
-      preload(getImagePath(letter))
+      if (letter != "<space>" && letter != "<enter>"){
+        preload(getImagePath(letter))
+      }
     })
   })
 
@@ -58,50 +60,38 @@ var engine = Matter.Engine.create(document.querySelector('.content'), {
       width: WIDTH,
       height: HEIGHT,
       background: '#222'
+
     }
   }
 })
 
-// Show textures
+//Show textures
 engine.render.options.wireframes = false
 
-// if (debug.enabled) {
-//   engine.render.options.showCollisions = true
-//   engine.render.options.showVelocity = true
-//   engine.render.options.showAngleIndicator = true
-// }
+if (DEBUG) {
+  engine.render.options.showCollisions = true
+  engine.render.options.showVelocity = false
+  engine.render.options.showAngleIndicator = false
+  engine.render.options.showIds = true
+  
+}
 
-// platform to catch letters that fall offscreen
-var platform = Matter.Bodies.rectangle(WIDTH / 2, HEIGHT + 200, WIDTH * 4, OFFSET, {
+// engine.world.bounds.max.x = 100
+// engine.world.bounds.max.y = 100
+
+//platform to catch letters that fall offscreen
+var platform = Matter.Bodies.rectangle(0, HEIGHT, WIDTH * 4, OFFSET, {
   isStatic: true,
   friction: 1, // letters should stop sliding with sleeping=true
   render: {
-    visible: false
+    visible: true
   }
 })
 
+
+
 // Add static walls surrounding the world
-Matter.World.add(engine.world, [
-  // bottom (left)
-  Matter.Bodies.rectangle(WIDTH / 4, HEIGHT, WIDTH / 2, OFFSET, {
-    angle: 0,
-    isStatic: true,
-    friction: 0.001,
-    render: {
-      visible: true
-    }
-  }),
-  // bottom (right)
-  Matter.Bodies.rectangle((WIDTH / 4) * 3, HEIGHT, WIDTH / 2, OFFSET, {
-    angle: 0,
-    isStatic: true,
-    friction: 0.001,
-    render: {
-      visible: true
-    }
-  }),
-  platform
-])
+Matter.World.add(engine.world, [platform])
 
 // run the engine
 
@@ -142,6 +132,7 @@ function addLetter (key, x, y) {
   
   if (key == '<space>' || key == '<enter>')
   {
+    if (letters.length == 0) return
     var letter_bodies = letters.map(function(letter) {return letter.body;}); 
     
     word_body = Matter.Body.create({
@@ -153,6 +144,7 @@ function addLetter (key, x, y) {
     word_object.letters = letters
     word_object.id = word_body.id
     word_object.value = ""
+    word_object.status = "new"
     dict[word_object.value.toLowerCase()] ? word_object.is_english = true : word_object.is_english = false
 
     for (i = 0; i < letters.length; i++)
@@ -205,7 +197,7 @@ function createWord(value, x, y)
   {
     var body = Matter.Bodies.rectangle(x + (j * 50), y , 40, 50, {
     restitution: RESTITUTION,
-    friction: 0.001,
+    friction: 1,
        render: {
         sprite: {
           texture: getImagePath(value[j].toUpperCase())
@@ -219,14 +211,29 @@ function createWord(value, x, y)
     letter_object.word = null
     letter_object.id = body.id
     letter_object.value = value[j]
+ 
     letters.push(letter_object)
+
   }
 
   var letter_bodies = letters.map(function(letter) {return letter.body;});
-
+  
+  // var ropeA = Composites.stack(200, 100, value.length, 1, 50, 50, function(x, y, column, row) {
+  //           return Matter.Bodies.rectangle(x + (column * 50), y , 40, 50, {
+  //   restitution: RESTITUTION,
+  //   friction: 0.001,
+  //      render: {
+  //       sprite: {
+  //         texture: getImagePath(value[j].toUpperCase())
+  //       }
+  //     }
+  //   })
+  //       });
   word_body = Matter.Body.create({
       parts: letter_bodies
   }); 
+
+
 
   word_object = {}
 
@@ -234,21 +241,47 @@ function createWord(value, x, y)
   word_object.letters = letters
   word_object.id = word_body.id
   word_object.value = value
+  word_object.status = "new"
   dict[word_object.value.toLowerCase()] ? word_object.is_english = true : word_object.is_english = false
+
+  words.push(word_object)
+
+  for (j = 0; j < value.length; j++)
+  {
+    world_letters[letters[j].id] = word_object
+  }
   // for (i = 0; i < letters.length; i++)
   // {
   //   world_letters[letters[i].id] = word_object
   // }
-  words.push(word_object)  
+  // words.push(word_object)  
   return word_body
 
 }
 
 Matter.Events.on(engine, 'collisionStart', onCollision)
+Matter.Events.on(engine, 'beforeUpdate', updateItemsStatus)
+delete_me = []
+function updateItemsStatus (event)
+{
+  for (m = 0; m < delete_me.length; m++){
+    Matter.World.remove(engine.world, delete_me[m])
+  }
+ 
+  if (event.timestamp % 3000 < 50)
+  {
+    for (item in world_letters) {
+
+        world_letters[item].status = "old"
+    }
+  }
+}
+
+
 
 function onCollision (e) {
   e.pairs.forEach(function (pair) {
-    if (!world_letters[pair.bodyA.id] || !world_letters[pair.bodyB.id] || current_collisions[world_letters[pair.bodyA.id].id+"_"+world_letters[pair.bodyB.id].id]){
+    if (!world_letters[pair.bodyA.id] || world_letters[pair.bodyA.id].status == "new" || !world_letters[pair.bodyB.id] || world_letters[pair.bodyB.id].status == "new"){
       return
     }
 
@@ -257,12 +290,31 @@ function onCollision (e) {
     colliding_words.first_object = pair.bodyA
     colliding_words.second_word = world_letters[pair.bodyB.id]
     colliding_words.second_object = pair.bodyB
-    colliding_words.status = "NEW"
-    current_collisions[world_letters[pair.bodyA.id].id+"_"+world_letters[pair.bodyB.id].id] = colliding_words
+    colliding_words.pair = pair
+    
+    if (world_letters[pair.bodyB.id].combusting == true || world_letters[pair.bodyA.id].combusting == true)
+    {
+      return
+    }
+
+    world_letters[pair.bodyB.id].combusting = true
+    world_letters[pair.bodyA.id].combusting = true
+    
+    current_collisions[world_letters[pair.bodyA.id].id + "_" + world_letters[pair.bodyB.id].id] = colliding_words
     if (DEBUG){
       console.log(colliding_words.first_word.value + " is touching " + colliding_words.second_word.value)
     }
-    react(colliding_words)
+    current_collisions[world_letters[pair.bodyA.id].id + "_" + world_letters[pair.bodyB.id].id] = []
+    if (react(colliding_words))
+    {
+      delete world_letters[pair.bodyA.id]
+      delete world_letters[pair.bodyB.id]
+    }else
+    {
+      world_letters[pair.bodyB.id].combusting = false
+      world_letters[pair.bodyA.id].combusting = false
+    }
+
 
   })
 }
@@ -312,13 +364,30 @@ function react (colliding_words)
   }
   if (DEBUG)
   {
-    console.log("for word = " + valids[selected].words[0]);
-    for (j = 1; j < valids[selected].words.length; j++)
-      console.log("also generates = " + valids[selected].words[j] )
-  }
+    if (valids[selected])
+    {
+     console.log("for word = " + valids[selected].words[0]);
+      for (j = 1; j < valids[selected].words.length; j++)
+        console.log("we are generating = " + valids[selected].words[j] )
+    }else
+    {
+       console.log("no reaction possible")
 
-  combust(reaction, colliding_words)
+    }
+
+  }
+  
+  if (valids[selected])
+  {   
+    combust(reaction, colliding_words)
+
+    delete_me.push(world_letters[colliding_words.second_object.id].body)
+    delete_me.push(world_letters[colliding_words.first_object.id].body)
+    return true
+  }
+  return false
 }
+
 
 function combust(reaction, colliding_words)
 {
@@ -331,12 +400,13 @@ function combust(reaction, colliding_words)
 
  for (i = 0; i < reaction.words.length; i++)
   {
-    item = createWord(reaction.words[i], colliding_words.first_object.position.x, colliding_words.first_object.position.y);
-    Matter.Body.applyForce(item, item.position, vector)
-    word_items.push(item)
-  }
+    if( reaction.words[i].length > 0){
+      item = createWord(reaction.words[i], colliding_words.first_object.position.x, colliding_words.first_object.position.y);
+      Matter.Body.applyForce(item, item.position, vector)
+      word_items.push(item)
+    }
 
-  Matter.World.remove(engine.world, [world_letters[colliding_words.first_object.id].body, world_letters[colliding_words.second_object.id].body])
+  }
   Matter.World.add(engine.world, word_items)  
 }
 
