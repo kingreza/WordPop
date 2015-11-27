@@ -89,9 +89,26 @@ var platform = Matter.Bodies.rectangle(0, HEIGHT, WIDTH * 4, OFFSET, {
 })
 
 
+var right = Matter.Bodies.rectangle(0, HEIGHT, OFFSET, WIDTH * 4, {
+  isStatic: true,
+  friction: 1, // letters should stop sliding with sleeping=true
+  render: {
+    visible: true
+  }
+})
+
+var left = Matter.Bodies.rectangle(WIDTH, HEIGHT, OFFSET, WIDTH * 4, {
+  isStatic: true,
+  friction: 1, // letters should stop sliding with sleeping=true
+  render: {
+    visible: true
+  }
+})
+
+
 
 // Add static walls surrounding the world
-Matter.World.add(engine.world, [platform])
+Matter.World.add(engine.world, [platform, right, left])
 
 // run the engine
 
@@ -155,9 +172,12 @@ function addLetter (key, x, y) {
 
     dict[word_object.value.toLowerCase()] ? word_object.is_english = true : word_object.is_english = false
     word_object.sub_strings = allSubstrings(word_object.value)
-
+    
+   
+    //swing left as much as you swing right
+    !(+new Date()%2) ? coeff = -1 : coeff = 1
     var vector = {
-      x: 0,
+      x: coeff * (Math.floor((Date.now() / 200) % 10) / 50) - 0.025,
       y: -1 * (HEIGHT / 8200) * letters.length
     }    
     
@@ -195,6 +215,18 @@ function addLetter (key, x, y) {
 function createWord(value, x, y)
 {
   var letters = []
+
+    //don't build over the wall
+    y = y - Math.floor((Math.random() * 100) + 50)
+    if ((x + (value.length * 50)) > WIDTH)
+    {
+      x = x - ((x + (value.length * 50)) - WIDTH)
+    }
+    if (y < 0)
+    {
+      y = y + 50
+    }    
+
   for (j = 0; j < value.length; j++)
   {
     var body = Matter.Bodies.rectangle(x + (j * 50), y , 40, 50, {
@@ -220,22 +252,9 @@ function createWord(value, x, y)
 
   var letter_bodies = letters.map(function(letter) {return letter.body;});
   
-  // var ropeA = Composites.stack(200, 100, value.length, 1, 50, 50, function(x, y, column, row) {
-  //           return Matter.Bodies.rectangle(x + (column * 50), y , 40, 50, {
-  //   restitution: RESTITUTION,
-  //   friction: 0.001,
-  //      render: {
-  //       sprite: {
-  //         texture: getImagePath(value[j].toUpperCase())
-  //       }
-  //     }
-  //   })
-  //       });
   word_body = Matter.Body.create({
       parts: letter_bodies
   }); 
-
-
 
   word_object = {}
 
@@ -244,7 +263,7 @@ function createWord(value, x, y)
   word_object.id = word_body.id
   word_object.value = value
   word_object.status = "new"
-  //word_object.sub_strings = allSubstrings(value)
+  
   dict[word_object.value.toLowerCase()] ? word_object.is_english = true : word_object.is_english = false
 
   words.push(word_object)
@@ -253,11 +272,7 @@ function createWord(value, x, y)
   {
     world_letters[letters[j].id] = word_object
   }
-  // for (i = 0; i < letters.length; i++)
-  // {
-  //   world_letters[letters[i].id] = word_object
-  // }
-  // words.push(word_object)  
+
   return word_body
 
 }
@@ -421,9 +436,10 @@ function allSubstrings(word)
 function combust(reaction, colliding_words)
 {
   word_items = []
-
+    //swing left as much as you swing right
+  !(+new Date()%2) ? coeff = -1 : coeff = 1
   vector = {
-    x: (Math.floor((Date.now() / 200) % 10) / 200) - 0.025,
+    x: (Math.floor((Date.now() / 200) % 10) / 50) - 0.025,
     y: -1 * (HEIGHT / 2200) 
   } 
 
