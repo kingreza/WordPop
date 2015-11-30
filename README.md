@@ -1,6 +1,6 @@
 # Word Pop
 
-![Imgur](http://i.imgur.com/PPkfAMl.gifv)
+![Imgur](http://i.imgur.com/PPkfAMl.gif)
 
 ### Live demo: [WordPop](https://wordpop.herokuapp.com/)
 
