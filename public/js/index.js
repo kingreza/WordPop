@@ -113,7 +113,7 @@ Matter.World.add(engine.world, [platform, right, left])
 // run the engine
 
 var dict = {}
-$.get( "dict.txt", function( txt ) {
+$.get( "/data/dict.txt", function( txt ) {
     // Begin loading...
     // Get an array of all the words
     var words = txt.split( "\n" );
