@@ -26,7 +26,7 @@ var KEYS = [
   ['<space>', "<enter>"]
 ]
 
-var DEBUG = true
+var DEBUG = false
 var WIDTH, HEIGHT, KEYS_X
 
 function onResize () {
@@ -134,11 +134,25 @@ var world_letters = {}
 
 var current_collisions = []
 
+var cursor_location = 0
+
 document.body.addEventListener('keydown', function (e) {
   var key = vkey[e.keyCode]
 
+  if (letters.length == 0)
+  {
+    cursor_location = WIDTH/2
+  }
   if (key in KEYS_X) {
-    addLetter(key, (WIDTH/2) + (letters.length * 50), HEIGHT/2)
+    addLetter(key, cursor_location, HEIGHT/2)
+    w = 50;
+    offsets = 0
+    if (key == "W")  offsets = 30
+    if (key == "M") offsets = 20
+    if (key == "I" || key == "J") offsets = -10
+    cursor_location += w + offsets 
+    console.log(cursor_location)
+    
   }
 })
 
@@ -439,14 +453,14 @@ function combust(reaction, colliding_words)
     //swing left as much as you swing right
   !(+new Date()%2) ? coeff = -1 : coeff = 1
   vector = {
-    x: (Math.floor((Date.now() / 200) % 10) / 50) - 0.025,
+    x: coeff * (Math.floor((Date.now() / 200) % 10) / 50) - 0.025,
     y: -1 * (HEIGHT / 2200) 
   } 
 
  for (i = 0; i < reaction.words.length; i++)
   {
     if( reaction.words[i].length > 0){
-      item = createWord(reaction.words[i], colliding_words.first_object.position.x, colliding_words.first_object.position.y);
+      item = createWord(reaction.words[i], colliding_words.first_object.position.x, colliding_words.first_object.position.y + i * 50);
       Matter.Body.applyForce(item, item.position, vector)
       word_items.push(item)
     }

@@ -1,16 +1,13 @@
-# Magic Keyboard
+# Word Pop
 
 ### Live demo: [magickeyboard.io](http://magickeyboard.io)
 
-I built this little hack after seeing an [animated GIF on /r/gifs](https://www.reddit.com/r/gifs/comments/3t5ssx/magic_keyboard/):
+In Word Pop, the words you type react with each other when the touch, forming at least one new valid English word. 
 
-![magic keyboard gif](static/magic-keyboard.gif)
+I built this little hack over Thanksgiving break, after seeing Feross's Magic Keyboard.
 
 ### Built with
 
-[![js-standard-style](https://cdn.rawgit.com/feross/standard/master/badge.svg)](https://github.com/feross/standard)
-
-- [browserify](http://browserify.org/)
 - [matter-js](http://brm.io/matter-js/)
 
 ### Contributing
@@ -19,4 +16,4 @@ Pull requests welcome!
 
 ### License
 
-MIT. Copyright (c) [Feross Aboukhadijeh](http://feross.org).
+MIT. Copyright (c) [Reza Shirazian](http://reza.codes).
