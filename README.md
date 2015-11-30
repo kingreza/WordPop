@@ -1,10 +1,10 @@
 # Word Pop
 
-### Live demo: [magickeyboard.io](http://magickeyboard.io)
+### Live demo:
 
-In Word Pop, the words you type react with each other when the touch, forming at least one new valid English word. 
+In Word Pop, the words you type react when the touch, forming at least one new valid English word. 
 
-I built this little hack over Thanksgiving break, after seeing Feross's Magic Keyboard.
+I built this little hack over Thanksgiving break, after seeing Feross's Magic Keyboard. [magickeyboard.io](http://magickeyboard.io)
 
 ### Built with
 
