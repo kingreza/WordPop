@@ -16,6 +16,16 @@ html, body, .content {
   font-size: 30px;
 }
 
+.info{
+  position: absolute;
+  color: white;
+  font-family: monospace;
+  font-size: small;
+}
+.info > a{
+  color: white;
+}
+
 .blink {
   background-color: #6BFF38;
   position: relative;
